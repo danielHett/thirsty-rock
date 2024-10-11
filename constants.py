@@ -34,3 +34,6 @@ EC2_ASSUME_ROLE_POLICY = {
 
 # Security group stuff...
 EC2_SECURITY_GROUP_NAME = 'thirsty-rock-security-group'
+
+# Instance profile stuff... (why does this even exist?). 
+EC2_INSTANCE_PROFILE_NAME = 'thirsty-rock-ec2-instance-profile'

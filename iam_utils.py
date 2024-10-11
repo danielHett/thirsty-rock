@@ -30,6 +30,10 @@ def setup_ec2_role():
 
     attach_policy(ec2_iam_role, ec2_iam_policy)
 
+    create_instance_profile()
+
+
+
 def get_ec2_iam_role():
     logging.info('Starting get_ec2_iam_role')
 
@@ -116,6 +120,20 @@ def create_ec2_iam_role():
 
     return role
 
+def attach_role_to_profile():
+    logging.info('Starting attach_role_to_profile')
+
+    client = boto3.client('iam')
+
+    try: 
+        client.add_role_to_instance_profile(
+            InstanceProfileName=constants.EC2_INSTANCE_PROFILE_NAME,
+            RoleName=constants.EC2_ROLE_NAME
+        )
+
+    except Exception:
+        raise Exception("Encountered an error while calling out to IAM.")
+
 def attach_policy(role, policy):
     logging.info('Starting attach_policy with (role, policy)')
     logging.info(role)
@@ -132,3 +150,35 @@ def attach_policy(role, policy):
         raise Exception("Encountered an error while calling out to IAM.")
 
     logging.info('Attach successful')
+
+"""
+Creates an instance profile and attaches the role from the constants file. This function expects that the role
+has already been created!
+"""
+def create_instance_profile():
+    logging.info('Starting create_instance_profile')
+
+    client = boto3.client('iam')
+
+    profile = None
+    try:
+        profile = client.get_instance_profile(InstanceProfileName=constants.EC2_INSTANCE_PROFILE_NAME)['InstanceProfile']
+    except Exception as error:
+        if 'NoSuchEntityException' not in str(error):
+            raise Exception("Encountered an error while trying to fetch an instance profile.")
+
+    if profile is None:
+        profile = client.create_instance_profile(InstanceProfileName=constants.EC2_INSTANCE_PROFILE_NAME)['InstanceProfile']
+    
+    roles = profile['Roles']
+    if len(roles) > 0:
+        client.remove_role_from_instance_profile(
+            InstanceProfileName=constants.EC2_INSTANCE_PROFILE_NAME,
+            RoleName=roles[0]['RoleName']
+        )
+    
+    client.add_role_to_instance_profile(
+            InstanceProfileName=constants.EC2_INSTANCE_PROFILE_NAME,
+            RoleName=constants.EC2_ROLE_NAME
+    )
+    
